@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".ui.main.TextMessageFragment"
+    android:orientation="vertical">
+
+    <EditText
+        android:id="@+id/coverMessageEt"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:inputType="text"
+        android:importantForAutofill="no"
+        android:hint="Безглузде повідомлення"/>
+
+    <EditText
+        android:id="@+id/secretMessageEt"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:inputType="textMultiLine"
+        android:lines="4"
+        android:importantForAutofill="no"
+        android:hint="Секретне повідомлення"/>
+
+    <Button
+        android:id="@+id/hideBtn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Сховати"/>
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+        android:hint="Hint"
+        app:endIconMode="custom"
+        app:endIconDrawable="@drawable/ic_baseline_content_copy_24"
+        app:endIconContentDescription="Copy secret">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:enabled="false"
+            />
+
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <Button
+        android:id="@+id/findBtn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Знайти"/>
+
+
+</LinearLayout>

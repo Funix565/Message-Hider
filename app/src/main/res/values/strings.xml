@@ -1,5 +1,6 @@
 <resources>
     <string name="app_name">Message Hider</string>
-    <string name="tab_text_1">Tab 1</string>
-    <string name="tab_text_2">Tab 2</string>
+    <string name="tab_text_1">Hide in Text</string>
+    <string name="tab_text_2">Hide in Image</string>
+    <string name="hello_blank_fragment">Hello blank fragment</string>
 </resources>

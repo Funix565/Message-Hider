@@ -18,8 +18,11 @@ class SectionsPagerAdapter(fa: FragmentActivity) :
 
     override fun createFragment(position: Int): Fragment {
         // createFragment always supplies a new fragment instance each time the function is called.
-        // Return a PlaceholderFragment (defined as a static inner class below).
-        return PlaceholderFragment.newInstance(position + 1)
+        when (position) {
+            0 -> return TextMessageFragment()
+        }
+
+        return ImageMessageFragment()
     }
 
     override fun getItemCount(): Int {

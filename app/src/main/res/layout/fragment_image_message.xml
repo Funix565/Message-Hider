@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".ui.main.ImageMessageFragment"
+    android:orientation="vertical">
+
+    <!--    TODO: Change colour or text after selection-->
+    <Button
+        android:id="@+id/selectContainerBtn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Контейнер"/>
+
+    <EditText
+        android:id="@+id/secretMessageEt"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:inputType="textMultiLine"
+        android:lines="3"
+        android:importantForAutofill="no"
+        android:hint="Секретне повідомлення"/>
+
+    <!--    TODO: Change colour or text after selection-->
+    <Button
+        android:id="@+id/selectSecretImgBtn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Секретне зображення"/>
+
+    <Button
+        android:id="@+id/hideBtn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Сховати"/>
+
+    <Button
+        android:id="@+id/shareBtn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Поділитися"/>
+
+    <ImageView
+        android:id="@+id/hiddenImg"
+        android:layout_width="50dp"
+        android:layout_height="50dp"/>
+
+<!--    TODO: Add line to separate areas-->
+    <Button
+        android:id="@+id/selectSecretBtn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Секретне зображення"/>
+
+    <Button
+        android:id="@+id/findBtn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Знайти"/>
+
+    <ImageView
+        android:id="@+id/foundImg"
+        android:layout_width="50dp"
+        android:layout_height="50dp"/>
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+        android:hint="Hint"
+        app:endIconMode="custom"
+        app:endIconDrawable="@drawable/ic_baseline_content_copy_24"
+        app:endIconContentDescription="Copy secret">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:enabled="false"/>
+
+    </com.google.android.material.textfield.TextInputLayout>
+
+</LinearLayout>

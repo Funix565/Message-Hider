@@ -35,7 +35,7 @@ class MainActivity : AppCompatActivity() {
         // of generating page titles for the TabLayout object.
         // Previously: SectionsPagerAdapter.getPageTitle()
         TabLayoutMediator(tabs, viewPager) { tab, position ->
-            tab.text = this.resources.getString(TAB_TITLES[position])
+            tab.text = getString(TAB_TITLES[position])
         }.attach()
 
         val fab: FloatingActionButton = binding.fab
