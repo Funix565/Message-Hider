@@ -2,7 +2,10 @@ package ua.sd.messagehider.ui.main
 
 import android.app.Activity
 import android.app.AlertDialog
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.ContentValues
+import android.content.Context.CLIPBOARD_SERVICE
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -32,6 +35,11 @@ class ImageMessageFragment : Fragment() {
     private lateinit var containerBitmap: Bitmap
     private lateinit var secretBitmap: Bitmap
 
+    // TODO: This is probably unnecessary
+    private lateinit var createdSecretBitmap: Bitmap
+
+    private lateinit var lastCreatedSecretUri: Uri
+
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
@@ -45,6 +53,8 @@ class ImageMessageFragment : Fragment() {
         binding.selectSecretBtn.setOnClickListener { onSelectSecretClicked() }
         binding.hideBtn.setOnClickListener { onHideButtonClicked() }
         binding.findBtn.setOnClickListener { onFindButtonClicked() }
+        binding.msgIl.setEndIconOnClickListener { onCopySecretClicked() }
+        binding.shareBtn.setOnClickListener { onShareClicked() }
 
         return binding.root
     }
@@ -76,14 +86,13 @@ class ImageMessageFragment : Fragment() {
             return
         }
 
-
         // Create a mutable copy of a  Bitmap
         val imageMessage = ImageMessage(containerBitmap.copy(containerBitmap.config, true))
 
-        val secretBitmap = imageMessage.hideText(userInput)
+        createdSecretBitmap = imageMessage.hideText(userInput)
 
         // TODO: Unnecessary
-        binding.hiddenImg.setImageBitmap(secretBitmap)
+        binding.hiddenImg.setImageBitmap(createdSecretBitmap)
 
         // Save image to gallery
         ActivityCompat.requestPermissions(
@@ -91,8 +100,8 @@ class ImageMessageFragment : Fragment() {
             arrayOf(android.Manifest.permission.WRITE_EXTERNAL_STORAGE),
             SAVE_REQUEST_CODE
         )
-        saveImage(secretBitmap)
 
+        saveImage(createdSecretBitmap)
     }
 
     // https://youtu.be/AuID5KSYXgQ
@@ -109,6 +118,11 @@ class ImageMessageFragment : Fragment() {
                 }
                 val imageUri: Uri? =
                     resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
+                if (imageUri != null) {
+
+                    // URI: content://media/external/images/media/52 -- OK
+                    lastCreatedSecretUri = imageUri
+                }
                 fos = imageUri?.let {
                     resolver.openOutputStream(it)
                 }
@@ -118,6 +132,9 @@ class ImageMessageFragment : Fragment() {
                 Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
             val image = File(imagesDirectory, name)
             fos = FileOutputStream(image)
+
+            // URI: something in storage/emulated/0 -- FAILS later in onShareClicked()
+            lastCreatedSecretUri = Uri.fromFile(image)
         }
 
         fos?.use {
@@ -139,15 +156,54 @@ class ImageMessageFragment : Fragment() {
             return
         }
 
-        /* TODO: User can't know what secret is inside.
-        * Just call base findMessage().
-        * Check true/false.
-        * Access read-only fields.
-        * */
+         // TODO: User can't know what secret is inside.
+         //  Just call base findMessage().
+         //  Check true/false.
+         //  Access read-only fields.
 
         val imageMessage = ImageMessage(secretBitmap.copy(secretBitmap.config, true))
         val secretText = imageMessage.findText()
         binding.msgTv.setText(secretText)
+    }
+
+    // May throw an FileUriExposedException exposed beyond app through ClipData.Item.getUri()
+    // if saved by else{} code block in saveImage
+    // Can forget for now because my emulator has API 30 >= Build.VERSION_CODES.Q
+    private fun onShareClicked() {
+        if (!this::lastCreatedSecretUri.isInitialized) {
+            val dialog = AlertDialog.Builder(requireActivity())
+                .setTitle("Немає зображення для надсилання")
+                .setMessage("Спочатку сховайте секрет в зображенні")
+                .setCancelable(false)
+                .setPositiveButton(android.R.string.ok) { d, _ -> d.dismiss() }
+                .create()
+            dialog.show()
+
+            return
+        }
+
+        // https://developer.android.com/training/sharing/send
+        val shareIntent: Intent = Intent().apply {
+            action = Intent.ACTION_SEND
+            putExtra(Intent.EXTRA_STREAM, lastCreatedSecretUri)
+            type = "image/png"
+        }
+
+        startActivity(Intent.createChooser(shareIntent, "Поділитися секретом"))
+    }
+
+    // https://developer.android.com/develop/ui/views/touch-and-input/copy-paste
+    private fun onCopySecretClicked() {
+        val foundSecret = binding.msgTv.text.toString()
+        if (foundSecret.isNotBlank()) {
+            val clipboard = requireContext().getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
+            val clip: ClipData = ClipData.newPlainText("secret message", foundSecret)
+            clipboard.setPrimaryClip(clip)
+
+            if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.S_V2) {
+                Toast.makeText(requireActivity(), "Secret copied to clipboard", Toast.LENGTH_SHORT).show()
+            }
+        }
     }
 
     // http://androidbitmaps.blogspot.com/2015/04/loading-images-in-android-part-iii-pick.html
