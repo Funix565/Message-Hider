@@ -9,30 +9,12 @@ class ImageMessage(private val container: Bitmap) {
     // Embed text in every LSB of Color
     // TODO: Work with UTF-8
     fun hideText(content: String): Bitmap {
+        // TODO: Explain this code and bit operations
 
-//        val test = "я"
-//        val length = test.length
-//        val bytes = test.encodeToByteArray()
-//        val sz = bytes.size
-//
-//        val intYa = bytes[0].toInt()
-//        val uintYa = bytes[0].toUInt()
-//        val ubyteYa = bytes[0].toUByte()
-//
-//        val h:Int = 0xff
-//        val ub = bytes[0].toInt() and h
-//
-//        val decodeToString = bytes.decodeToString()
-//
-//        val toHexString = Integer.toHexString(bytes[0].toInt())
-//
-//        val binaryString = Integer.toBinaryString(bytes[0].toInt())
+        // New String template with $ because in Kotlin function parameters are immutable
+        val content_ = "$content$MESSAGE_HIDER_END_TEXT_TAG"
 
-        // TODO: Comment this code, try to manually debug
-        // Implement find()
-
-
-        val content_ = "$content^"
+        // TODO: Mark first pixels with MESSAGE_HIDER_START_TEXT_TAG
 
         // ARGB is 32 bits
         val lastBitMask = 0x00000001
@@ -47,23 +29,17 @@ class ImageMessage(private val container: Bitmap) {
 
                 if (lastBit == 1) {
                     if (x < container.width) {
-                        val temp = container.getPixel(x, y)
                         container.setPixel(x, y, container.getPixel(x, y) or 0x00000001)
-                        val temp2 = container.getPixel(x, y)
                         ++x
                     } else {
                         x = 0
                         ++y
-                        val temp = container.getPixel(x, y)
                         container.setPixel(x, y, container.getPixel(x, y) or 0x00000001)
-                        val temp2 = container.getPixel(x, y)
                     }
                 }
                 else {
                     if (x < container.width) {
-                        val temp = container.getPixel(x, y)
                         container.setPixel(x, y, container.getPixel(x, y) and 0xFFFFFFFE.toInt())
-                        val temp2 = container.getPixel(x, y)
                         ++x
                     } else {
                         x = 0
@@ -79,7 +55,20 @@ class ImageMessage(private val container: Bitmap) {
         return container
     }
 
+    /* TODO: Create public method boolean findMessage(). How to return TEXT or Bitmap?
+    * Check hidden message type: text, image, none.
+    * Call private methods, set result-field (or how to return different fields?) and return true
+    * Set result-field null and return false
+    * Caller checks if result is true or false
+    * If it is true, it checks read-only fields
+    *  */
+
+
+    // TODO: Make private
     fun findText(): String {
+
+        // TODO: Check start tag MESSAGE_HIDER_START_TEXT_TAG '<' at the beginning before finding
+
         val lastBitMask = 0x00000001
 
         var resultBytes = byteArrayOf()
@@ -87,22 +76,21 @@ class ImageMessage(private val container: Bitmap) {
         var x = 0
         var y = 0
 
-        // TODO: Work with strings val binary = "01010101", binary.toInt(2)
+        // TODO: Maybe work with strings val binary = "01010101", binary.toInt(2)
 
         var characterBit = 0
         var flag = 0
 
-        while (characterBit.toChar() != '^') {
+        // TODO: What if there is no hidden message? -- ADD another tag at the beginning and check before finding
+        while (characterBit.toChar() != MESSAGE_HIDER_END_TEXT_TAG) {
             for (i in 1..8) {
                 if (x < container.width) {
-                    val temp = container.getPixel(x, y)
                     flag = container.getPixel(x, y) and lastBitMask
                     ++x
                 }
                 else {
                     x = 0
                     ++y
-                    val temp = container.getPixel(x, y)
                     flag = container.getPixel(x, y) and lastBitMask
                 }
                 if (flag == 1) {
@@ -115,14 +103,19 @@ class ImageMessage(private val container: Bitmap) {
                     characterBit = characterBit shr 1
                 }
             }
+
             resultBytes += (characterBit.toByte())
         }
 
-
         val foundMsg = resultBytes.decodeToString()
 
-        // TODO Remove '^' in the end
+        // Remove END_TAG in the end
+        return foundMsg.dropLast(1)
+    }
 
-        return foundMsg
+    companion object {
+        private val MESSAGE_HIDER_START_IMAGE_TAG = '^'
+        private val MESSAGE_HIDER_START_TEXT_TAG = '<'
+        private val MESSAGE_HIDER_END_TEXT_TAG = '>'
     }
 }

@@ -20,6 +20,8 @@
         android:layout_height="wrap_content"
         android:inputType="textMultiLine"
         android:lines="3"
+        android:scrollbars="vertical"
+        android:maxLength="4096"
         android:importantForAutofill="no"
         android:hint="Секретне повідомлення"/>
 
@@ -78,7 +80,11 @@
             android:id="@+id/msgTv"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:enabled="false"/>
+            android:inputType="textMultiLine"
+            android:lines="3"
+            android:enabled="true"
+            android:focusableInTouchMode="false"
+            android:scrollbars="vertical"/>
 
     </com.google.android.material.textfield.TextInputLayout>
 

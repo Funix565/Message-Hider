@@ -1,10 +1,12 @@
 package ua.sd.messagehider.ui.main
 
 import android.app.Activity
+import android.app.AlertDialog
 import android.content.ContentValues
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Color
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -36,8 +38,11 @@ class ImageMessageFragment : Fragment() {
     ): View? {
         _binding = FragmentImageMessageBinding.inflate(inflater, container, false)
 
-        binding.selectContainerBtn.setOnClickListener {onSelectContainerClicked() }
-        binding.selectSecretImgBtn.setOnClickListener { onSelectSecretClicked() }
+        binding.selectContainerBtn.setOnClickListener { onSelectContainerClicked() }
+
+        // TODO: Find out proper name for the image I want to hide
+        // TODO: Find out proper name for the image where I want to find text
+        binding.selectSecretBtn.setOnClickListener { onSelectSecretClicked() }
         binding.hideBtn.setOnClickListener { onHideButtonClicked() }
         binding.findBtn.setOnClickListener { onFindButtonClicked() }
 
@@ -45,18 +50,53 @@ class ImageMessageFragment : Fragment() {
     }
 
     private fun onHideButtonClicked() {
-        // TODO: Check for empty containerBitmap
+        val userInput = binding.secretMessageEt.text.toString()
+
+        if (!this::containerBitmap.isInitialized) {
+            val dialog = AlertDialog.Builder(requireActivity())
+                .setTitle("Оберіть контейнер")
+                .setMessage("Оберіть зображення, куди потрібно сховати секрет")
+                .setCancelable(false)
+                .setPositiveButton(android.R.string.ok) { d, _ -> d.dismiss() }
+                .create()
+            dialog.show()
+
+            return
+        }
+
+        if (userInput.isBlank()) {
+            val dialog = AlertDialog.Builder(requireActivity())
+                .setTitle("Введіть секрет")
+                .setMessage("Введіть текстове повідомлення, яке потрібно сховати в зображенні")
+                .setCancelable(false)
+                .setPositiveButton(android.R.string.ok) { d, _ -> d.dismiss() }
+                .create()
+            dialog.show()
+
+            return
+        }
+
+
         // Create a mutable copy of a  Bitmap
         val imageMessage = ImageMessage(containerBitmap.copy(containerBitmap.config, true))
-        val secretBitmap = imageMessage.hideText("A")
 
+        val secretBitmap = imageMessage.hideText(userInput)
+
+        // TODO: Unnecessary
         binding.hiddenImg.setImageBitmap(secretBitmap)
 
         // Save image to gallery
-        ActivityCompat.requestPermissions(requireActivity(), arrayOf(android.Manifest.permission.WRITE_EXTERNAL_STORAGE), SAVE_REQUEST_CODE)
+        ActivityCompat.requestPermissions(
+            requireActivity(),
+            arrayOf(android.Manifest.permission.WRITE_EXTERNAL_STORAGE),
+            SAVE_REQUEST_CODE
+        )
         saveImage(secretBitmap)
+
     }
 
+    // https://youtu.be/AuID5KSYXgQ
+    // https://www.simplifiedcoding.net/android-save-bitmap-to-gallery/
     private fun saveImage(bitmap: Bitmap) {
         val name = "${System.currentTimeMillis()}.png"
         var fos: OutputStream? = null
@@ -67,14 +107,15 @@ class ImageMessageFragment : Fragment() {
                     put(MediaStore.MediaColumns.MIME_TYPE, "image/png")
                     put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_PICTURES)
                 }
-                val imageUri: Uri? = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
+                val imageUri: Uri? =
+                    resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
                 fos = imageUri?.let {
                     resolver.openOutputStream(it)
                 }
             }
-        }
-        else {
-            val imagesDirectory = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
+        } else {
+            val imagesDirectory =
+                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
             val image = File(imagesDirectory, name)
             fos = FileOutputStream(image)
         }
@@ -86,11 +127,30 @@ class ImageMessageFragment : Fragment() {
     }
 
     private fun onFindButtonClicked() {
+        if (!this::secretBitmap.isInitialized) {
+            val dialog = AlertDialog.Builder(requireActivity())
+                .setTitle("Оберіть зображення")
+                .setMessage("Оберіть зображення, де потрібно знайти секрет")
+                .setCancelable(false)
+                .setPositiveButton(android.R.string.ok) { d, _ -> d.dismiss() }
+                .create()
+            dialog.show()
+
+            return
+        }
+
+        /* TODO: User can't know what secret is inside.
+        * Just call base findMessage().
+        * Check true/false.
+        * Access read-only fields.
+        * */
+
         val imageMessage = ImageMessage(secretBitmap.copy(secretBitmap.config, true))
         val secretText = imageMessage.findText()
         binding.msgTv.setText(secretText)
     }
 
+    // http://androidbitmaps.blogspot.com/2015/04/loading-images-in-android-part-iii-pick.html
     private fun onSelectContainerClicked() {
         val gallery = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.INTERNAL_CONTENT_URI)
         startActivityForResult(gallery, PICK_CONTAINER_REQUEST_CODE)
@@ -98,18 +158,23 @@ class ImageMessageFragment : Fragment() {
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == PICK_CONTAINER_REQUEST_CODE && resultCode == Activity.RESULT_OK) {
-            val imageUri = data?.data ?:
-                throw IllegalArgumentException("Can't get the image from gallery")
 
-            containerBitmap = BitmapFactory.decodeStream(activity?.contentResolver?.openInputStream(imageUri))
+        if (requestCode == PICK_CONTAINER_REQUEST_CODE && resultCode == Activity.RESULT_OK) {
+            val imageUri =
+                data?.data ?: throw IllegalArgumentException("Can't get the image from gallery")
+
+            containerBitmap =
+                BitmapFactory.decodeStream(activity?.contentResolver?.openInputStream(imageUri))
+            binding.selectContainerBtn.setBackgroundColor(Color.GREEN)
         }
 
         if (requestCode == PICK_SECRET_REQUEST_CODE && resultCode == Activity.RESULT_OK) {
-            val imageUri = data?.data ?:
-            throw IllegalArgumentException("Can't get the image from gallery")
+            val imageUri =
+                data?.data ?: throw IllegalArgumentException("Can't get the image from gallery")
 
-            secretBitmap = BitmapFactory.decodeStream(activity?.contentResolver?.openInputStream(imageUri))
+            secretBitmap =
+                BitmapFactory.decodeStream(activity?.contentResolver?.openInputStream(imageUri))
+            binding.selectSecretBtn.setBackgroundColor(Color.GREEN)
         }
     }
 
@@ -120,8 +185,8 @@ class ImageMessageFragment : Fragment() {
 
     companion object {
         private val PICK_CONTAINER_REQUEST_CODE = 1
-        private val PICK_SECRET_REQUEST_CODE = 1
-        private val SAVE_REQUEST_CODE = 2
+        private val PICK_SECRET_REQUEST_CODE = 2
+        private val SAVE_REQUEST_CODE = 3
 //        /**
 //         * Use this factory method to create a new instance of
 //         * this fragment using the provided parameters.
