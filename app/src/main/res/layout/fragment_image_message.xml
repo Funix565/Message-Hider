@@ -39,6 +39,12 @@
         android:text="Сховати"/>
 
     <Button
+        android:id="@+id/hideImgBtn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Сховати зображення"/>
+
+    <Button
         android:id="@+id/shareBtn"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"

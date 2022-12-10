@@ -33,6 +33,7 @@ class ImageMessageFragment : Fragment() {
     private val binding get() = _binding!!
 
     private lateinit var containerBitmap: Bitmap
+    private lateinit var secretHideBitmap: Bitmap
     private lateinit var secretBitmap: Bitmap
 
     // TODO: This is probably unnecessary
@@ -47,11 +48,13 @@ class ImageMessageFragment : Fragment() {
         _binding = FragmentImageMessageBinding.inflate(inflater, container, false)
 
         binding.selectContainerBtn.setOnClickListener { onSelectContainerClicked() }
+        binding.selectSecretImgBtn.setOnClickListener { onSelectSecretImageClicked() }
 
         // TODO: Find out proper name for the image I want to hide
         // TODO: Find out proper name for the image where I want to find text
         binding.selectSecretBtn.setOnClickListener { onSelectSecretClicked() }
         binding.hideBtn.setOnClickListener { onHideButtonClicked() }
+        binding.hideImgBtn.setOnClickListener { onHideImageButtonClicked() }
         binding.findBtn.setOnClickListener { onFindButtonClicked() }
         binding.msgIl.setEndIconOnClickListener { onCopySecretClicked() }
         binding.shareBtn.setOnClickListener { onShareClicked() }
@@ -59,6 +62,9 @@ class ImageMessageFragment : Fragment() {
         return binding.root
     }
 
+    // TODO: We can have one HIDE button and decide what to hide based on input
+    //  Or we can have two HIDE buttons.
+    //  Maybe even something like RadioButtons...
     private fun onHideButtonClicked() {
         val userInput = binding.secretMessageEt.text.toString()
 
@@ -77,7 +83,8 @@ class ImageMessageFragment : Fragment() {
         if (userInput.isBlank()) {
             val dialog = AlertDialog.Builder(requireActivity())
                 .setTitle("Введіть секрет")
-                .setMessage("Введіть текстове повідомлення, яке потрібно сховати в зображенні")
+                .setMessage("Завантажте секретне зображення або введіть текстове повідомлення, " +
+                        "яке потрібно сховати в зображенні")
                 .setCancelable(false)
                 .setPositiveButton(android.R.string.ok) { d, _ -> d.dismiss() }
                 .create()
@@ -102,6 +109,47 @@ class ImageMessageFragment : Fragment() {
         )
 
         saveImage(createdSecretBitmap)
+    }
+
+    private fun onHideImageButtonClicked() {
+        // TODO: Repeated code
+        if (!this::containerBitmap.isInitialized) {
+            val dialog = AlertDialog.Builder(requireActivity())
+                .setTitle("Оберіть контейнер")
+                .setMessage("Оберіть зображення, куди потрібно сховати секрет")
+                .setCancelable(false)
+                .setPositiveButton(android.R.string.ok) { d, _ -> d.dismiss() }
+                .create()
+            dialog.show()
+
+            return
+        }
+
+        if (!this::secretHideBitmap.isInitialized) {
+            val dialog = AlertDialog.Builder(requireActivity())
+                .setTitle("Оберіть секретне зображення")
+                .setMessage("Оберіть зображення, яке потрібно сховати в контейнер")
+                .setCancelable(false)
+                .setPositiveButton(android.R.string.ok) { d, _ -> d.dismiss() }
+                .create()
+            dialog.show()
+
+            return
+        }
+
+        val imageMsg = ImageMessage(containerBitmap.copy(containerBitmap.config, true))
+        val containerWithSecretImage = imageMsg.hideImage(secretHideBitmap)
+
+        // TODO: Repeated code
+        // Save image to gallery
+        ActivityCompat.requestPermissions(
+            requireActivity(),
+            arrayOf(android.Manifest.permission.WRITE_EXTERNAL_STORAGE),
+            SAVE_REQUEST_CODE
+        )
+
+        saveImage(containerWithSecretImage)
+
     }
 
     // https://youtu.be/AuID5KSYXgQ
@@ -157,13 +205,21 @@ class ImageMessageFragment : Fragment() {
         }
 
          // TODO: User can't know what secret is inside.
-         //  Just call base findMessage().
+         //  Just call base findSecret().
          //  Check true/false.
          //  Access read-only fields.
 
         val imageMessage = ImageMessage(secretBitmap.copy(secretBitmap.config, true))
-        val secretText = imageMessage.findText()
-        binding.msgTv.setText(secretText)
+        //val secretText = imageMessage.findText()
+        if (imageMessage.findSecret()) {
+            if (imageMessage.secretImage != null) {
+                binding.hiddenImg.setImageBitmap(imageMessage.secretImage)
+                saveImage(imageMessage.secretImage!!)
+            }
+            else {
+                binding.msgTv.setText(imageMessage.secretText)
+            }
+        }
     }
 
     // May throw an FileUriExposedException exposed beyond app through ClipData.Item.getUri()
@@ -212,6 +268,11 @@ class ImageMessageFragment : Fragment() {
         startActivityForResult(gallery, PICK_CONTAINER_REQUEST_CODE)
     }
 
+    private fun onSelectSecretImageClicked() {
+        val gallery = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.INTERNAL_CONTENT_URI)
+        startActivityForResult(gallery, PICK_SECRET_IMG_REQUEST_CODE)
+    }
+
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
 
@@ -232,6 +293,15 @@ class ImageMessageFragment : Fragment() {
                 BitmapFactory.decodeStream(activity?.contentResolver?.openInputStream(imageUri))
             binding.selectSecretBtn.setBackgroundColor(Color.GREEN)
         }
+
+        if (requestCode == PICK_SECRET_IMG_REQUEST_CODE && resultCode == Activity.RESULT_OK) {
+            val imageUri =
+                data?.data ?: throw IllegalArgumentException("Can't get the image from gallery")
+
+            secretHideBitmap =
+                BitmapFactory.decodeStream(activity?.contentResolver?.openInputStream(imageUri))
+            binding.selectSecretImgBtn.setBackgroundColor(Color.GREEN)
+        }
     }
 
     private fun onSelectSecretClicked() {
@@ -239,10 +309,12 @@ class ImageMessageFragment : Fragment() {
         startActivityForResult(gallery, PICK_SECRET_REQUEST_CODE)
     }
 
+    // TODO: Definitely come up with better names :)
     companion object {
         private val PICK_CONTAINER_REQUEST_CODE = 1
         private val PICK_SECRET_REQUEST_CODE = 2
-        private val SAVE_REQUEST_CODE = 3
+        private val PICK_SECRET_IMG_REQUEST_CODE = 3
+        private val SAVE_REQUEST_CODE = 4
 //        /**
 //         * Use this factory method to create a new instance of
 //         * this fragment using the provided parameters.
